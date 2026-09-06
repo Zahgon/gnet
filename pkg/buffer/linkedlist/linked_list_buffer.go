@@ -1,25 +1,7 @@
-// Copyright (c) 2021 The Gnet Authors. All rights reserved.
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-// Package linkedlist implements a memory-reusable linked list of byte slices.
 package linkedlist
 
 import (
 	"io"
-	"math"
-
-	bsPool "github.com/panjf2000/gnet/v2/pkg/pool/byteslice"
 )
 
 type node struct {
@@ -27,11 +9,8 @@ type node struct {
 	next *node
 }
 
-func (b *node) len() int {
-	return len(b.buf)
-}
+func (b *node) len() int { _ = "STUB: not implemented"; return 0 }
 
-// Buffer is a linked list of node.
 type Buffer struct {
 	head  *node
 	tail  *node
@@ -39,279 +18,54 @@ type Buffer struct {
 	bytes int
 }
 
-// Read reads data from the Buffer.
-func (llb *Buffer) Read(p []byte) (n int, err error) {
-	if len(p) == 0 {
-		return 0, nil
-	}
+func (llb *Buffer) Read(p []byte) (n int, err error) { _ = "STUB: not implemented"; return 0, nil }
 
-	for b := llb.pop(); b != nil; b = llb.pop() {
-		m := copy(p[n:], b.buf)
-		n += m
-		if m < b.len() {
-			b.buf = b.buf[m:]
-			llb.pushFront(b)
-		} else {
-			bsPool.Put(b.buf)
-		}
-		if n == len(p) {
-			return
-		}
-	}
-	if n == 0 {
-		err = io.EOF
-	}
-	return
-}
+func (llb *Buffer) AllocNode(n int) []byte { _ = "STUB: not implemented"; return nil }
 
-// AllocNode allocates a []byte with the given length that is expected to
-// be pushed into the Buffer.
-func (llb *Buffer) AllocNode(n int) []byte {
-	return bsPool.Get(n)
-}
+func (llb *Buffer) FreeNode(p []byte) { _ = "STUB: not implemented"; return }
 
-// FreeNode puts the given []byte back to the pool to free the memory.
-func (llb *Buffer) FreeNode(p []byte) {
-	bsPool.Put(p)
-}
+func (llb *Buffer) Append(p []byte) { _ = "STUB: not implemented"; return }
 
-// Append is like PushBack but appends b without copying it.
-func (llb *Buffer) Append(p []byte) {
-	n := len(p)
-	if n == 0 {
-		return
-	}
-	llb.pushBack(&node{buf: p})
-}
+func (llb *Buffer) Pop() []byte { _ = "STUB: not implemented"; return nil }
 
-// Pop removes and returns the buffer of the head or nil if the list is empty.
-func (llb *Buffer) Pop() []byte {
-	n := llb.pop()
-	if n == nil {
-		return nil
-	}
-	return n.buf
-}
+func (llb *Buffer) PushFront(p []byte) { _ = "STUB: not implemented"; return }
 
-// PushFront is a wrapper of pushFront, which accepts []byte as its argument.
-func (llb *Buffer) PushFront(p []byte) {
-	n := len(p)
-	if n == 0 {
-		return
-	}
-	b := bsPool.Get(n)
-	copy(b, p)
-	llb.pushFront(&node{buf: b})
-}
+func (llb *Buffer) PushBack(p []byte) { _ = "STUB: not implemented"; return }
 
-// PushBack is a wrapper of pushBack, which accepts []byte as its argument.
-func (llb *Buffer) PushBack(p []byte) {
-	n := len(p)
-	if n == 0 {
-		return
-	}
-	b := bsPool.Get(n)
-	copy(b, p)
-	llb.pushBack(&node{buf: b})
-}
+func (llb *Buffer) Peek(maxBytes int) ([][]byte, error) { _ = "STUB: not implemented"; return nil, nil }
 
-// Peek assembles the up to maxBytes of [][]byte based on the list of node,
-// it won't remove these nodes from l until Discard() is called.
-func (llb *Buffer) Peek(maxBytes int) ([][]byte, error) {
-	if maxBytes <= 0 || maxBytes == math.MaxInt32 {
-		maxBytes = math.MaxInt32
-	} else if maxBytes > llb.Buffered() {
-		return nil, io.ErrShortBuffer
-	}
-	var bs [][]byte
-	var cum int
-	for iter := llb.head; iter != nil; iter = iter.next {
-		offset := iter.len()
-		if cum+offset > maxBytes {
-			offset = maxBytes - cum
-		}
-		bs = append(bs, iter.buf[:offset])
-		if cum += offset; cum == maxBytes {
-			break
-		}
-	}
-	return bs, nil
-}
-
-// PeekWithBytes is like Peek but accepts [][]byte and puts them onto head.
 func (llb *Buffer) PeekWithBytes(maxBytes int, bs ...[]byte) ([][]byte, error) {
-	if maxBytes <= 0 || maxBytes == math.MaxInt32 {
-		maxBytes = math.MaxInt32
-	} else if maxBytes > llb.Buffered() {
-		return nil, io.ErrShortBuffer
-	}
-	var bss [][]byte
-	var cum int
-	for _, b := range bs {
-		if n := len(b); n > 0 {
-			offset := n
-			if cum+offset > maxBytes {
-				offset = maxBytes - cum
-			}
-			bss = append(bss, b[:offset])
-			if cum += offset; cum == maxBytes {
-				return bss, nil
-			}
-		}
-	}
-	for iter := llb.head; iter != nil; iter = iter.next {
-		offset := iter.len()
-		if cum+offset > maxBytes {
-			offset = maxBytes - cum
-		}
-		bss = append(bss, iter.buf[:offset])
-		if cum += offset; cum == maxBytes {
-			break
-		}
-	}
-	return bss, nil
+	_ = "STUB: not implemented"
+	return nil, nil
 }
 
-// Discard removes some nodes based on n bytes.
 func (llb *Buffer) Discard(n int) (discarded int, err error) {
-	if n <= 0 {
-		return
-	}
-	for n != 0 {
-		b := llb.pop()
-		if b == nil {
-			break
-		}
-		if n < b.len() {
-			b.buf = b.buf[n:]
-			discarded += n
-			llb.pushFront(b)
-			break
-		}
-		n -= b.len()
-		discarded += b.len()
-		bsPool.Put(b.buf)
-	}
-	return
+	_ = "STUB: not implemented"
+	return 0, nil
 }
 
 const minRead = 512
 
-// ReadFrom implements io.ReaderFrom.
 func (llb *Buffer) ReadFrom(r io.Reader) (n int64, err error) {
-	var m int
-	for {
-		b := bsPool.Get(minRead)
-		m, err = r.Read(b)
-		if m < 0 {
-			panic("Buffer.ReadFrom: reader returned negative count from Read")
-		}
-		n += int64(m)
-		b = b[:m]
-		if err == io.EOF {
-			bsPool.Put(b)
-			return n, nil
-		}
-		if err != nil {
-			bsPool.Put(b)
-			return
-		}
-		llb.pushBack(&node{buf: b})
-	}
+	_ = "STUB: not implemented"
+	return 0, nil
 }
 
-// WriteTo implements io.WriterTo.
 func (llb *Buffer) WriteTo(w io.Writer) (n int64, err error) {
-	var m int
-	for b := llb.pop(); b != nil; b = llb.pop() {
-		m, err = w.Write(b.buf)
-		if m > b.len() {
-			panic("Buffer.WriteTo: invalid Write count")
-		}
-		n += int64(m)
-		if err != nil {
-			return
-		}
-		if m < b.len() {
-			b.buf = b.buf[m:]
-			llb.pushFront(b)
-			return n, io.ErrShortWrite
-		}
-		bsPool.Put(b.buf)
-	}
-	return
+	_ = "STUB: not implemented"
+	return 0, nil
 }
 
-// Len returns the length of the list.
-func (llb *Buffer) Len() int {
-	return llb.size
-}
+func (llb *Buffer) Len() int { _ = "STUB: not implemented"; return 0 }
 
-// Buffered returns the number of bytes that can be read from the current buffer.
-func (llb *Buffer) Buffered() int {
-	return llb.bytes
-}
+func (llb *Buffer) Buffered() int { _ = "STUB: not implemented"; return 0 }
 
-// IsEmpty reports whether l is empty.
-func (llb *Buffer) IsEmpty() bool {
-	return llb.head == nil
-}
+func (llb *Buffer) IsEmpty() bool { _ = "STUB: not implemented"; return false }
 
-// Reset removes all elements from this list.
-func (llb *Buffer) Reset() {
-	for b := llb.pop(); b != nil; b = llb.pop() {
-		bsPool.Put(b.buf)
-	}
-	llb.head = nil
-	llb.tail = nil
-	llb.size = 0
-	llb.bytes = 0
-}
+func (llb *Buffer) Reset() { _ = "STUB: not implemented"; return }
 
-// pop returns and removes the head of l. If l is empty, it returns nil.
-func (llb *Buffer) pop() *node {
-	if llb.head == nil {
-		return nil
-	}
-	b := llb.head
-	llb.head = b.next
-	if llb.head == nil {
-		llb.tail = nil
-	}
-	b.next = nil
-	llb.size--
-	llb.bytes -= b.len()
-	return b
-}
+func (llb *Buffer) pop() *node { _ = "STUB: not implemented"; return nil }
 
-// pushFront adds the new node to the head of l.
-func (llb *Buffer) pushFront(b *node) {
-	if b == nil {
-		return
-	}
-	if llb.head == nil {
-		b.next = nil
-		llb.tail = b
-	} else {
-		b.next = llb.head
-	}
-	llb.head = b
-	llb.size++
-	llb.bytes += b.len()
-}
+func (llb *Buffer) pushFront(b *node) { _ = "STUB: not implemented"; return }
 
-// pushBack adds a new node to the tail of l.
-func (llb *Buffer) pushBack(b *node) {
-	if b == nil {
-		return
-	}
-	if llb.tail == nil {
-		llb.head = b
-	} else {
-		llb.tail.next = b
-	}
-	b.next = nil
-	llb.tail = b
-	llb.size++
-	llb.bytes += b.len()
-}
+func (llb *Buffer) pushBack(b *node) { _ = "STUB: not implemented"; return }
